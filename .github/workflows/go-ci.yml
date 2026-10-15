@@ -8,6 +8,11 @@ on:
         required: false
         type: string
         default: .
+      sibling-repositories:
+        description: Newline-separated public owner/repository checkouts required by local replace directives
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -23,6 +28,20 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Check out sibling modules
+        if: inputs.sibling-repositories != ''
+        env:
+          SIBLING_REPOSITORIES: ${{ inputs.sibling-repositories }}
+        shell: bash
+        run: |
+          while IFS= read -r repository; do
+            [[ -z "$repository" ]] && continue
+            if [[ ! "$repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+              echo "invalid sibling repository: $repository" >&2
+              exit 1
+            fi
+            git clone --depth=1 "https://github.com/${repository}.git" "../${repository##*/}"
+          done <<< "$SIBLING_REPOSITORIES"
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
