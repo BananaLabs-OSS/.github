@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ""
+      race:
+        description: Run the Go race detector
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,4 +53,8 @@ jobs:
           go-version-file: ${{ inputs.working-directory }}/go.mod
           cache-dependency-path: ${{ inputs.working-directory }}/go.sum
       - name: Test
+        if: ${{ !inputs.race }}
         run: go test ./...
+      - name: Test with race detector
+        if: inputs.race
+        run: go test -race ./...
